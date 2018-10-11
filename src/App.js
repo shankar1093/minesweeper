@@ -1,6 +1,7 @@
 import React, { Component } from 'react';
 import ReactDOM from 'react-dom';
 import Board from './component/Board';
+import App from './App';
 import './style.scss';
 
 class Game extends React.Component {
