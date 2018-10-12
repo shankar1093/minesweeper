@@ -237,6 +237,7 @@ export default class Board extends React.Component {
       plantMines: false,
       timer: 0,
       cheatCodeValue: "",
+      cheatCode:false,
       gameSessionId: boardUtils.getRandomNumber(1000),
     });
   }
