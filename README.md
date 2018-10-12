@@ -9,7 +9,7 @@ This is an implementation of minesweeper using react.
 5. New Game button to create a new game.
 6. Cheat Code
 
-This game follows the rules of the Windows 98 version, hence the first move is free. The Cheat code is inspired by this version too (XYZZY + Enter)
+This game follows the rules of the Windows 98 version, hence the first move is free. The Cheat code is inspired by this version too (XYZZY + Enter). The user can also play the game by flagging what he/she believes are the mines and then validating the board to see if the flags are placed correctly. 
 
 ## Logging
 
