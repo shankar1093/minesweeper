@@ -19,8 +19,8 @@ This app logs the board state so it could be used for further analysis down the 
 This application is being hosted on heroku. The deployment is hooked to github. 
 The live version can be accessed at [Demo](https://sr-minesweeper.herokuapp.com/)
 
-## Inastructions
+## Instructions
 1. Clone the repository
-2.```git clone https://github.com/shankar1093/minesweeper.git```
+2. ```git clone https://github.com/shankar1093/minesweeper.git```
 3. ```yarn install```  (Install all dependencies) 
-4.```yarn start``` (Will start app on port 3000 or availble open port)
+4. ```yarn start``` (Will start app on port 3000 or availble open port)
