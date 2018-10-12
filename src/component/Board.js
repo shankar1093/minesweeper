@@ -219,6 +219,11 @@ export default class Board extends React.Component {
       boardData: updatedData,
       mineCount: this.props.mines - this.getItems(updatedData, "flag").length,
     });
+    /* this will log an array of a unique gameSessionId, time, board state and cheatcode status
+    Every game will be given a unique game id and that is used a key to map the board states. 
+    
+    TO-DO: Push these front end logs to some location for further analysis. Potential to use for Ml algos
+    */
     console.log([this.state.gameSessionId, Date.now(), this.state.boardData, this.state.cheatCode])
   }
 
