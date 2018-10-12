@@ -13,8 +13,9 @@ class Game extends React.Component {
   render() {
     const { height, width, mines, cheatCode } = this.state;
     return (
+
       <div className="game">
-        <Board height={height} width={width} mines={mines} />
+          <Board height={height} width={width} mines={mines} />
       </div>
     );
   }

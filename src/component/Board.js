@@ -1,22 +1,24 @@
 import React from 'react';
 import PropTypes from 'prop-types';
 import Cell from './Cell';
-import Button from 'muicss/lib/react/button';
+import * as boardUtils from './BoardUtils';
+
 
 export default class Board extends React.Component {
   state = {
+    gameSessionId: boardUtils.getRandomNumber(100000000),
     boardData: this.initBoardData(this.props.height, this.props.width, this.props.mines),
     gameStatus: "Game in progress",
     mineCount: this.props.mines,
     moveCount: 0,
     plantMines: false,
+    timer: 0,
     cheatCode: false,
     cheatCodeValue: "",
-    key_map: {13: false, 16: false}
-  };
+  }
+
 
   handleKeyPress = this.handleKeyPress.bind(this);
-
   /* Helper Functions */
 
   // get mines
@@ -24,113 +26,42 @@ export default class Board extends React.Component {
     let mineArray = [];
 
     data.forEach(datarow => {
-        datarow.forEach(dataitem => {
-            switch(type) {
-                case "mine":
-                if (dataitem.isMine) {
-                    mineArray.push(dataitem);
-                }
-                break;
-                case "flag":
-                if (dataitem.isFlagged) {
-                    mineArray.push(dataitem);
-                }
-                break;
-                case "hidden":
-                if (dataitem.isRevealed) {
-                    mineArray.push(dataitem);
-                }
-                break;
-            default:
-                return <h1>Something went wrong.</h1>;
+      datarow.forEach(dataitem => {
+        switch (type) {
+          case "mine":
+            if (dataitem.isMine) {
+              mineArray.push(dataitem);
             }
+            break;
+          case "flag":
+            if (dataitem.isFlagged) {
+              mineArray.push(dataitem);
+            }
+            break;
+          case "hidden":
+            if (!dataitem.isRevealed) {
+              mineArray.push(dataitem);
+            }
+            break;
+          default:
+            return <h1>Something went wrong.</h1>;
+        }
 
-        });
+      });
     });
-   
+
     return mineArray;
   }
 
 
-  // get random number given a dimension
-  getRandomNumber(dimension) {
-    // return Math.floor(Math.random() * dimension);
-    return Math.floor((Math.random() * 1000) + 1) % dimension;
-  }
-
   // Gets initial board data
   initBoardData(height, width, mines) {
-    let data = this.createEmptyArray(height, width);
-    data = this.plantMines(data, height, width, mines);
+    let data = boardUtils.createEmptyArray(height, width);
+    data = boardUtils.plantMines(data, height, width, mines);
     data = this.getNeighbours(data, height, width);
     return data;
   }
 
-  createEmptyArray(height, width) {
-    let data = [];
-
-    for (let i = 0; i < height; i++) {
-      data.push([]);
-      for (let j = 0; j < width; j++) {
-        data[i][j] = {
-          x: i,
-          y: j,
-          isMine: false,
-          neighbour: 0,
-          isRevealed: false,
-          isEmpty: false,
-          isFlagged: false,
-        };
-      }
-    }
-    return data;
-  }
-
-  // plant mines on the board
-  plantMines(data, height, width, mines) {
-    let randomX, randomY, minesPlanted = 0;
-
-    while (minesPlanted < mines) {
-      randomX = this.getRandomNumber(width);
-      randomY = this.getRandomNumber(height);
-      if (!(data[randomX][randomY].isMine)) {
-        data[randomX][randomY].isMine = true;
-        minesPlanted++;
-      }
-    }
-
-    return (data);
-  }
-
-  // This function is used to move a mine from the current location
-  // This ensures that the first move will not be a mine. 
-
-  moveMine(data, x,y) {
-      if (!data[x][y].isMine) {
-          console.log("This function should only be called to move mines. No mine found at this location.")
-          return null;
-      }
-      let mineMoved = false;
-
-      const tempBoard = this.state.boardData;
-      tempBoard[x][y].isMine = false;
-      this.setState({tempBoard});
-
-      let randomX, randomY
-      randomX = this.getRandomNumber(this.props.width);
-      randomY = this.getRandomNumber(this.props.height);
-      while (!mineMoved) {
-          if (data[randomX][randomY].isEmpty) {
-              data[randomX][randomY].isMine = true;
-            //   this.state.boardData[x][y].isEmpty = false;
-              mineMoved = true;
-          } else {
-            randomX = this.getRandomNumber(this.props.width);
-            randomY = this.getRandomNumber(this.props.height);
-          }
-      }
-      return data;
-  }
   // get number of neighbouring mines for each board cell
   getNeighbours(data, height, width) {
     let updatedData = data
@@ -139,7 +70,7 @@ export default class Board extends React.Component {
       for (let j = 0; j < width; j++) {
         if (data[i][j].isMine !== true) {
           let mine = 0;
-          const area = this.traverseBoard(data[i][j].x, data[i][j].y, data);
+          const area = boardUtils.traverseBoard(data[i][j].x, data[i][j].y, data, height, width);
           area.forEach(value => {
             if (value.isMine) {
               mine++;
@@ -156,35 +87,34 @@ export default class Board extends React.Component {
     return (updatedData);
   };
 
-  // looks for neighbouring cells and returns them
-  traverseBoard(x, y, data) {
-    const el = [];
 
-    //up
-    if (x > 0) { el.push(data[x - 1][y]); }
+  // This function is used to move a mine from the current location
+  // This ensures that the first move will not be a mine. 
 
-    //down
-    if (x < this.props.height - 1) { el.push(data[x + 1][y]); }
+  moveMine(data, x, y) {
+    if (!data[x][y].isMine) {
+      console.log("This function should only be called to move mines. No mine found at this location.")
+      return null;
+    }
+    let mineMoved = false;
 
-    //left
-    if (y > 0) { el.push(data[x][y - 1]); }
+    const tempBoard = this.state.boardData;
+    tempBoard[x][y].isMine = false;
+    this.setState({ tempBoard });
 
-    //right
-    if (y < this.props.width - 1) { el.push(data[x][y + 1]); }
-
-    // top left
-    if (x > 0 && y > 0) { el.push(data[x - 1][y - 1]); }
-
-    // top right
-    if (x > 0 && y < this.props.width - 1) { el.push(data[x - 1][y + 1]); }
-
-    // bottom right
-    if (x < this.props.height - 1 && y < this.props.width - 1) { el.push(data[x + 1][y + 1]); }
-
-    // bottom left
-    if (x < this.props.height - 1 && y > 0) { el.push(data[x + 1][y - 1]); }
-
-    return el;
+    let randomX, randomY
+    randomX = boardUtils.getRandomNumber(this.props.width);
+    randomY = boardUtils.getRandomNumber(this.props.height);
+    while (!mineMoved) {
+      if (data[randomX][randomY].isEmpty) {
+        data[randomX][randomY].isMine = true;
+        mineMoved = true;
+      } else {
+        randomX = boardUtils.getRandomNumber(this.props.width);
+        randomY = boardUtils.getRandomNumber(this.props.height);
+      }
+    }
+    return data;
   }
 
   // reveals the whole board
@@ -202,7 +132,7 @@ export default class Board extends React.Component {
 
   /* reveal logic for empty cell */
   revealEmpty(x, y, data) {
-    let area = this.traverseBoard(x, y, data);
+    let area = boardUtils.traverseBoard(x, y, data, this.props.height, this.props.width);
     area.forEach(value => {
       if (!value.isFlagged && !value.isRevealed && (value.isEmpty || !value.isMine)) {
         data[value.x][value.y].isRevealed = true;
@@ -214,6 +144,16 @@ export default class Board extends React.Component {
     return data;
   }
 
+  tick () {
+    this.setState({timer: (this.state.timer + 1)})
+  }
+  startTimer () {
+    clearInterval(this.timer)
+    this.timer = setInterval(this.tick.bind(this), 1000)
+  }
+  stopTimer () {
+    clearInterval(this.timer)
+  }
   // Handle User Events
 
   validateBoard(e) {
@@ -223,30 +163,28 @@ export default class Board extends React.Component {
     const hiddenArray = this.getItems(updatedData, "hidden");
 
     if (this.state.gameStatus === "You Lost.") {
-        alert("...You really did lose.")
-        return null;
-    }
-
-    if (JSON.stringify(mineArray) === JSON.stringify(FlagArray)) {
-      this.setState({ mineCount: 0, gameStatus: "You Win." });
-      this.revealBoard();
-      alert("You Win");
-    } else {
-        alert("You have not found all mines")
-        return null;
+      alert("...You really did lose.")
+      return null;
     }
     if (JSON.stringify(mineArray) === JSON.stringify(hiddenArray)) {
-        this.setState({ mineCount: 0, gameStatus: "You Win." });
-        this.revealBoard();
-        alert("You Win");
-      } else {
-          alert("You have not found all mines")
-          return null;
-      }
-      
+      this.setState({ mineCount: 0, gameStatus: "You Win." });
+      this.revealBoard();
+      this.stopTimer();
+      alert("You Win 😎");
+    } else if (JSON.stringify(mineArray) === JSON.stringify(FlagArray)) {
+      this.setState({ mineCount: 0, gameStatus: "You Win." });
+      this.revealBoard();
+      this.stopTimer();
+      alert("You Win 😎");
+    } else {
+      alert("You have not found all mines")
+      return null;
+    }
   }
+
   handleCellClick(x, y) {
-    this.setState({moveCount:this.state.moveCount+1});
+    this.setState({ moveCount: this.state.moveCount + 1 });
+    this.startTimer()
     if (this.state.boardData[x][y].isRevealed || this.state.boardData[x][y].isFlagged) return null;
 
     let updatedData = this.state.boardData;
@@ -255,90 +193,77 @@ export default class Board extends React.Component {
 
     // move mine if the first click is a mine
     if (this.state.boardData[x][y].isMine && this.state.moveCount === 0) {
-        this.moveMine(updatedData,x,y);
-        updatedData = this.revealEmpty(x, y, updatedData);
+      this.moveMine(updatedData, x, y);
+      updatedData = this.revealEmpty(x, y, updatedData);
     }
     // check if mine. game over if true
     if (this.state.boardData[x][y].isMine) {
       this.setState({ gameStatus: "You Lost." });
+      this.stopTimer();
       this.revealBoard();
-      alert("game over");
+      alert("game over 😞");
     }
 
     if (updatedData[x][y].isEmpty) {
       updatedData = this.revealEmpty(x, y, updatedData);
     }
+    /* Comment this out for auto validation */
 
-    if (this.getItems(updatedData, "hidden").length === this.props.mines) {
-      this.setState({ mineCount: 0, gameStatus: "You Win." });
-      this.revealBoard();
-      alert("You Win");
-    }
+    // if (this.getItems(updatedData, "hidden").length === this.props.mines) {
+    //   this.setState({ mineCount: 0, gameStatus: "You Win." });
+    //   this.revealBoard();
+    //   alert("You Win 😎");
+    // }
 
     this.setState({
       boardData: updatedData,
       mineCount: this.props.mines - this.getItems(updatedData, "flag").length,
     });
+    console.log([this.state.gameSessionId, Date.now(), this.state.boardData, this.state.cheatCode])
+  }
+
+  newGame(e) {
+    e.preventDefault();
+    this.setState({
+      boardData: this.initBoardData(this.props.height, this.props.width, this.props.mines),
+      gameStatus: "Game in progress",
+      mineCount: this.props.mines,
+      moveCount: 0,
+      plantMines: false,
+      timer: 0,
+      cheatCodeValue: "",
+      gameSessionId: boardUtils.getRandomNumber(1000),
+    });
+  }
+
+
+ // Cheat Code Handler
+  handleKeyPress(e) {
+    e.preventDefault();
+    if (this.state.cheatCodeValue === "XYZZY") {
+      this.setState({ cheatCode: true })
+      console.log("CHEATER")
+    }
+
+    this.setState({ cheatCodeValue: this.state.cheatCodeValue + String.fromCharCode(e.keyCode) });
   }
   
-  newGame(e) {
-      e.preventDefault();
-      this.setState({boardData: this.initBoardData(this.props.height, this.props.width, this.props.mines),
-        gameStatus: "Game in progress",
-        mineCount: this.props.mines,
-        moveCount: 0,
-        plantMines: false,
-        cheatCodeValue: ""
-       });
-    }
-
-
-  handleKeyPress(e) {
-      e.preventDefault();
-    //   const map = this.state.key_map    
-    //   let part_1 = false;
-    //   let part_2 = false;
-    //   if (e.keyCode in this.state.key_map) {
-    //       map[e.keyCode] = true;
-    //       this.setState({map})
-    //       if (map[13] && map[16]){
-    //           console.log("1")
-    //           part_1 = true;
-    //           map[13] = false;
-    //           map[16] = false;
-    //           this.setState({map})
-    //       }
-    //       if (part_1 && map[13]){
-    //           console.log("2")
-    //           part_1 = false;
-    //           part_2 = true;
-    //           map[13] = false;
-    //           console.log(this.state.cheatCodeValue)
-    //       }
-          
-          if (this.state.cheatCodeValue === "XYZZY") {
-              this.setState({cheatCode:true})
-              console.log("CHEATER")
-          }
-            
-        this.setState({cheatCodeValue: this.state.cheatCodeValue + String.fromCharCode(e.keyCode)});
-    }
-  
-
   handleKeyReleased(e) {
-      const map = this.state.key_map
-      map[e.keyCode] = false
-      this.setState({map});
-}
+    const map = this.state.key_map
+    map[e.keyCode] = false
+    this.setState({ map });
+  }
 
   componentDidMount() {
     document.addEventListener('keydown', this.handleKeyPress);
   }
-  
+
   componentWillUnmount() {
     document.removeEventListener('keydown', this.handleKeyReleased);
+    clearInterval(this.timer)
+
   }
-  
+
   handleContextMenu(e, x, y) {
     e.preventDefault();
     let updatedData = this.state.boardData;
@@ -355,15 +280,18 @@ export default class Board extends React.Component {
       mines--;
     }
 
-    if (mines === 0) {
-      const mineArray = this.getItems(updatedData, "mine");
-      const FlagArray = this.getItems(updatedData, "flag");
-      if (JSON.stringify(mineArray) === JSON.stringify(FlagArray)) {
-        this.setState({ mineCount: 0, gameStatus: "You Win." });
-        this.revealBoard();
-        alert("You Win");
-      } 
-    }
+    /* Comment this out for auto validation when flags are used to find mines*/
+
+    // if (mines === 0) {
+    //   const mineArray = this.getItems(updatedData, "mine");
+    //   const FlagArray = this.getItems(updatedData, "flag");
+
+    //     if (JSON.stringify(mineArray) === JSON.stringify(FlagArray)) {
+    //       this.setState({ mineCount: 0, gameStatus: "You Win." });
+    //       this.revealBoard();
+    //       alert("You Win 😎");
+    //     } 
+    // }
 
     this.setState({
       boardData: updatedData,
@@ -371,6 +299,10 @@ export default class Board extends React.Component {
     });
   }
 
+  setTimer(e) {
+    e.preventDefault();
+
+  }
   renderBoard(data) {
     return data.map((datarow) => {
       return datarow.map((dataitem) => {
@@ -393,20 +325,27 @@ export default class Board extends React.Component {
     return (
       <div className="board">
         <div className="game-info">
-          <span className="info">Mines: {this.state.mineCount}</span>
+          <span className="info">🎲: {this.state.moveCount}</span>
+          <span className="info">💣: {this.state.mineCount}</span>
+          <span className="info">🕛 : {this.state.timer}</span>
           <h1 className="info">{this.state.gameStatus}</h1>
         </div>
+        
+
+        <div className="rules-left"><code>right click</code> : flag</div>
+        <div className="rules-right"><code>left click</code>  : reveal cell</div>
         {
           this.renderBoard(this.state.boardData)
         }
+        <button className="button-ng" onClick={(e) => { this.newGame(e) }}>
+          <h3 className="info">New Game</h3>
+        </button>
+        <button className="button-v" onClick={(e) => { this.validateBoard(e) }}>
+          <h3 className="info">Validate</h3>
+        </button>
 
-        <Button variant="flat" onClick={(e) => {this.newGame(e)}}>
-            <span className="info">New Game</span>
-        </Button>
-        <Button onClick={(e) => {this.validateBoard(e)}}>
-            <span className="info">Validate</span>
-        </Button>
-        </div>
+      </div>
+
     );
   }
 }

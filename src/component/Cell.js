@@ -6,6 +6,7 @@ export default class Cell extends React.Component {
         isHover: false,
     }
     handleMouseHover = this.handleMouseHover.bind(this);
+    // Returns value in cell (empty, flag or mine)
     getValue() {
         const { value } = this.props;
 
@@ -18,6 +19,8 @@ export default class Cell extends React.Component {
         }
         return value.neighbour;
     }
+
+    //reveals mine
     revealMine() {
         const { value } = this.props;
 
@@ -28,6 +31,7 @@ export default class Cell extends React.Component {
         }
     }
 
+    //functions toggling hover state
     handleMouseHover() {
         this.setState(this.toggleHoverState)
     }
